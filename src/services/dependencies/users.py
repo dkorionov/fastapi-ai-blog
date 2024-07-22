@@ -18,4 +18,5 @@ async def get_current_active_user(
         request: Request,
         user_controller: UserController = Depends(get_user_controller)
 ) -> BaseUser:
-    return await user_controller.get(request.state.user_id)
+    user = await user_controller.get(request.state.user_id)
+    return BaseUser.model_validate(user, from_attributes=True)

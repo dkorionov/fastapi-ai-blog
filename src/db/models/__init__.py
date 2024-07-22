@@ -1,4 +1,5 @@
 from .base import PgBaseModel
-from .user import UserTable
+from .posts import CommentTable, PostTable
+from .users import UserSettingsTable, UserTable
 
-__all__ = ["UserTable", "PgBaseModel"]
+__all__ = ["UserTable", "PgBaseModel", "PostTable", "CommentTable", "UserSettingsTable"]

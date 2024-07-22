@@ -1,9 +1,9 @@
 from typing import List
 
-from services.schemas.user import BaseUser
 from services.security import JwtAuthService
 
 from domains.controllers.base import BaseController
+from domains.dto.users import UserDTO
 from domains.repositories.user import UserReadDBRepository, UserWriteDBRepository
 
 
@@ -19,37 +19,38 @@ class UserController(BaseController):
         self.db_write_repo = db_write_repo
         self.oauth_service = oauth_service
 
-    async def list(self, filters: dict | None = None) -> list[BaseUser]:
+    async def list(self, filters: dict | None = None) -> list[UserDTO]:
         async with self.db_read_repo.session_factory() as session:
-            user_data = await self.db_read_repo.list(session, filters)
-            return [BaseUser.model_validate(user, from_attributes=True) for user in user_data]
+            users_in_db = await  self.db_read_repo.list(session, filters)
+            return [UserDTO.model_validate(user, from_attributes=True) for user in users_in_db]
 
-    async def get(self, item_id: int) -> BaseUser:
+    async def get(self, item_id: int) -> UserDTO:
         async with self.db_read_repo.session_factory() as session:
-            user_data = await self.db_read_repo.get(session, item_id)
-            return BaseUser.model_validate(user_data, from_attributes=True)
+            user_in_db = await self.db_read_repo.get(session, item_id)
+            return UserDTO.model_validate(user_in_db, from_attributes=True)
 
-    async def create(self, user: BaseUser) -> BaseUser:
+    async def create(self, user: UserDTO) -> UserDTO:
         async with self.db_write_repo.session_factory() as session:
-            user_data = user.model_dump()
+            user_data = user.model_dump(exclude={"id"})
             user_data["password"] = self.oauth_service.hash_password(user_data["password"])
-            created_user = await self.db_write_repo.create(session, user_data)
-            return BaseUser.model_validate(created_user, from_attributes=True)
+            created_user = await self.db_write_repo.create(
+                session, user_data
+            )
+            return UserDTO.model_validate(created_user, from_attributes=True)
 
-    async def create_user_bulk(self, users: List[BaseUser]) -> int:
+    async def create_user_bulk(self, users: List[UserDTO]) -> int:
         async with self.db_write_repo.session_factory() as session:
             users_to_create = []
-            for user_to_create in users:
-                user_data = user_to_create.model_dump()
+            for user in users:
+                user_data = user.model_dump(exclude={"id"})
                 user_data["password"] = self.oauth_service.hash_password(user_data["password"])
                 users_to_create.append(user_data)
             return await self.db_write_repo.create_bulk(session, users_to_create)
 
-    async def update(self, user: BaseUser) -> BaseUser:
+    async def update(self, user: UserDTO) -> UserDTO:
         async with self.db_write_repo.session_factory() as session:
-            user_data = user.model_dump()
-            updated_user = await self.db_write_repo.update(session, user_data["id"], **user_data)
-            return BaseUser.model_validate(updated_user, from_attributes=True)
+            updated_user = await self.db_write_repo.update(session, user.id, **user.model_dump())
+            return UserDTO.model_validate(updated_user, from_attributes=True)
 
     async def delete(self, item_id: int):
         async with self.db_write_repo.session_factory() as session:

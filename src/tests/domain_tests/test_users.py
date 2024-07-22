@@ -12,7 +12,9 @@ class TestUserController:
         created_user = await provide_user_controller.create(user_to_create)
         assert user_to_create.username == created_user.username
         assert user_to_create.email == created_user.email
-        assert provide_user_controller.oauth_service.verify_password(user_to_create.password, created_user.password)
+        assert provide_user_controller.oauth_service.verify_password(
+            user_to_create.password, created_user.password
+        )
 
     @pytest.mark.anyio
     async def test_get_user(self, provide_user_controller: UserController):

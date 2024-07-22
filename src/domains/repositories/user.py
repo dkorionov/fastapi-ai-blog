@@ -1,5 +1,5 @@
 
-from db.models.user import UserTable
+from db.models import UserTable
 from services.errors import ResourceNotFoundError
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession

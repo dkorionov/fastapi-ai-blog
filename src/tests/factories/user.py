@@ -1,11 +1,11 @@
 import factory
 from core.config.constansts import UserRole
-from services.schemas.user import BaseUser
+from domains.dto.users import UserDTO
 
 
 class UserFactory(factory.Factory):
     class Meta:
-        model = BaseUser
+        model = UserDTO
 
     username = factory.Faker("user_name")
     email = factory.Faker("email")

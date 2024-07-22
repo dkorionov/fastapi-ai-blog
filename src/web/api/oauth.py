@@ -1,6 +1,8 @@
 from domains.controllers.oauth import OauthController
 from fastapi import APIRouter, Depends, status
-from services.dependencies.oauth import get_oauth_controller
+from services.dependencies import (
+    get_oauth_controller,
+)
 from services.schemas.oauth import (
     LoginSchema,
     RefreshTokenInputSchema,
@@ -25,7 +27,11 @@ async def login(
         data: LoginSchema,
         oauth_controller: OauthController = Depends(get_oauth_controller)
 ) -> ResponseTokenScheme:
-    return await oauth_controller.login(data.username, data.password)
+    user, tokens = await oauth_controller.login(data.username, data.password)
+    return ResponseTokenScheme(
+        **user.model_dump(),
+        **tokens
+    )
 
 
 @router.post(
@@ -38,7 +44,11 @@ async def register(
         data: RegisterSchema,
         oauth_controller: OauthController = Depends(get_oauth_controller)
 ) -> ResponseTokenScheme:
-    return await oauth_controller.register(data)
+    user, tokens = await oauth_controller.register(data.model_dump())
+    return ResponseTokenScheme(
+        **user.model_dump(),
+        **tokens
+    )
 
 
 @router.post(
@@ -51,4 +61,8 @@ async def refresh_token(
         refresh_token_data: RefreshTokenInputSchema,
         oauth_controller: OauthController = Depends(get_oauth_controller)
 ) -> ResponseTokenScheme:
-    return await oauth_controller.refresh_access_token(refresh_token_data.refresh_token)
+    user, tokens = await oauth_controller.refresh_access_token(refresh_token_data.refresh_token)
+    return ResponseTokenScheme(
+        **user.model_dump(),
+        **tokens
+    )

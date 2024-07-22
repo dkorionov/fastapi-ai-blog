@@ -4,7 +4,6 @@ from typing import Any, Optional, Sequence, Type, TypeVar
 from db.models.base import PgBaseModel
 from services.errors import ResourceNotFoundError
 from sqlalchemy import Row, RowMapping, delete, insert, select, update
-from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 
@@ -67,25 +66,16 @@ class PgCreateUpdateDeleteRepository(BaseRepository):
         await session.commit()
 
     async def create_bulk(self, session: AsyncSession, data: list[dict]) -> int:
-        try:
-            result = await session.scalars(
-                insert(self.model).returning(self.model.id),
-                data,
-            )
-            await session.commit()
-            return len(list(result.all()))
-        except SQLAlchemyError as e:
-            await session.rollback()
-            raise e
+        result = await session.scalars(
+            insert(self.model).returning(self.model.id),
+            data,
+        )
+        await session.commit()
+        return len(list(result.all()))
 
     async def update_bulk(self, session: AsyncSession, updates: list[dict]) -> int:
-        try:
-            result = await session.scalars(
-                update(self.model).returning(self.model.id),
-                updates
-            )
-            return len(list(result.all()))
-
-        except SQLAlchemyError as e:
-            await session.rollback()
-            raise e
+        result = await session.scalars(
+            update(self.model).returning(self.model.id),
+            updates
+        )
+        return len(list(result.all()))
