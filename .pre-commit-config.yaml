@@ -1,0 +1,61 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+default_language_version:
+  python: python3.12
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.1.0
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-yaml
+      - id: check-docstring-first
+      - id: check-executables-have-shebangs
+      - id: check-case-conflict
+      - id: check-added-large-files
+        exclude: ^(.*\/dummy.*|.*\.json)$
+        args: [ "--maxkb=750", "--enforce-all" ]
+      - id: detect-private-key
+      - id: check-merge-conflict
+
+  - repo: https://github.com/asottile/add-trailing-comma
+    rev: v2.1.0
+    hooks:
+      - id: add-trailing-comma
+
+  - repo: https://github.com/asottile/yesqa
+    rev: v1.5.0
+    hooks:
+      - id: yesqa
+        name: Unused noqa
+
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: v0.2.2
+    hooks:
+      - id: ruff
+        args: [ --fix, --exit-non-zero-on-fix, --show-fixes ]
+        exclude: migrations/
+        name: ruff-format
+
+  - repo: local
+    hooks:
+      - id: tests
+        name: Pytest tests
+        language: system
+        entry: pdm run pytest src/tests
+        pass_filenames: false
+        always_run: true
+        types: [ python ]
+        stages: [ manual ]
+
+      - id: pdm-lock-check
+        name: pdm-lock-check
+        description: run pdm lock --check to validate config
+        entry: pdm lock --check
+        language: python
+        language_version: python3
+        pass_filenames: false
+        files: ^pyproject.toml$
+ci:
+  autofix_commit_msg: 🎨 [pre-commit.ci] Auto format from pre-commit.com hooks
+  autoupdate_commit_msg: ⬆ [pre-commit.ci] pre-commit autoupdate
