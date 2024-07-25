@@ -1,5 +1,4 @@
-
-from db.models import UserTable
+from db.models import UserModel
 from services.errors import ResourceNotFoundError
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,21 +7,21 @@ from .base import PgCreateUpdateDeleteRepository, PgGetListRepository
 
 
 class UserReadDBRepository(PgGetListRepository):
-    model = UserTable
+    model = UserModel
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    async def get_user_creds(self, session: AsyncSession, username: str) -> UserTable:
+    async def get_user_creds(self, session: AsyncSession, username: str) -> UserModel:
         query = select(self.model).where(self.model.username == username)
-        result: UserTable = (await session.execute(query)).scalars().first()
+        result: UserModel = (await session.execute(query)).scalars().first()
         if result is None:
             raise ResourceNotFoundError
         return result
 
 
 class UserWriteDBRepository(PgCreateUpdateDeleteRepository):
-    model = UserTable
+    model = UserModel
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

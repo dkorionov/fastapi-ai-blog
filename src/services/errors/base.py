@@ -38,6 +38,14 @@ class ResourceNotFoundError(AbstractError):
         super().__init__(detail=detail)
 
 
+class DuplicateResourceError(AbstractError):
+    error = "Duplicate Resource"
+    status_code = 409
+
+    def __init__(self, *, detail: str | None = None) -> None:
+        super().__init__(detail=detail)
+
+
 async def global_exception_handler(request: Request, exc: AbstractError) -> JSONResponse:
     return JSONResponse(
         status_code=exc.status_code,

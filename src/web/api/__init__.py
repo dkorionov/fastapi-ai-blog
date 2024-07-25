@@ -1,6 +1,7 @@
 from fastapi.routing import APIRouter
 
 from .oauth import router as auth_router
+from .posts import router as post_router
 from .users import router as user_router
 
 __all__ = [
@@ -17,3 +18,4 @@ async def healthcheck():
 
 v1_api_router.include_router(auth_router, tags=["auth"], prefix="/oauth")
 v1_api_router.include_router(user_router, tags=["users"], prefix="/users")
+v1_api_router.include_router(post_router, tags=["posts"], prefix="/posts")

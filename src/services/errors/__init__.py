@@ -1,4 +1,9 @@
-from .base import AbstractError, ResourceNotFoundError, global_exception_handler
+from .base import (
+    AbstractError,
+    DuplicateResourceError,
+    ResourceNotFoundError,
+    global_exception_handler,
+)
 from .oauth import InvalidCredentialsError, PermissionDeniedError
 
 __all__ = [
@@ -6,5 +11,6 @@ __all__ = [
     "global_exception_handler",
     "ResourceNotFoundError",
     "InvalidCredentialsError",
-    "PermissionDeniedError"
+    "PermissionDeniedError",
+    "DuplicateResourceError"
 ]

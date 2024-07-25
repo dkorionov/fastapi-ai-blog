@@ -1,3 +1,3 @@
-from .oauth import JwtAuthService
+from .oauth import CustomHTTPBearer, JwtAuthService
 
-__all__ = ["JwtAuthService"]
+__all__ = ["JwtAuthService", "CustomHTTPBearer"]

@@ -1,16 +1,14 @@
-from core.config.constansts import UserRole
 from pydantic import BaseModel, EmailStr, Field
 
 
-class BaseUser(BaseModel):
+class BaseUserSchema(BaseModel):
     username: str = Field(..., description="User username")
     email: EmailStr = Field()
-    role: UserRole = Field(..., description="User role")
 
 
-class InputUser(BaseUser):
+class InputUserSchema(BaseUserSchema):
     password: str = Field(..., description="User password")
 
 
-class OutputUser(BaseUser):
+class OutputUserSchema(BaseUserSchema):
     id: int = Field(..., description="User id")

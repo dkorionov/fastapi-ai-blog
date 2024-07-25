@@ -7,7 +7,7 @@ from starlette import status
 from web.api.users import me_url_name, user_all_url_name
 
 from tests.api_tests.conftest import login_client
-from tests.factories.user import UserFactory
+from tests.factories import UserFactory
 
 
 class TestUserAPI:

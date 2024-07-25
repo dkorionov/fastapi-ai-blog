@@ -2,7 +2,7 @@ from services.errors.oauth import InvalidCredentialsError
 from services.security import JwtAuthService
 
 from domains.controllers.base import BaseController
-from domains.dto.users import UserDTO
+from domains.dto import UserDTO
 from domains.repositories.user import UserReadDBRepository, UserWriteDBRepository
 
 

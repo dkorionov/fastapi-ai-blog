@@ -1,6 +1,6 @@
 import factory
 from core.config.constansts import UserRole
-from domains.dto.users import UserDTO
+from domains.dto import UserDTO
 
 
 class UserFactory(factory.Factory):

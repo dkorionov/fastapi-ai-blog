@@ -1,21 +1,23 @@
+from datetime import datetime
+
 from pydantic import BaseModel
 
-from services.schemas.user import BaseUser
+from services.schemas.user import OutputUserSchema
 
 
-class InputPost(BaseModel):
+class InputPostSchema(BaseModel):
     title: str
     content: str
 
 
-class BasePost(BaseModel):
+class BasePostSchema(BaseModel):
     id: int
     title: str
     content: str
-    created_at: float
-    updated_at: float
+    created_at: datetime
+    updated_at: datetime
     author_id: int
 
 
-class PostWithAuthor(BasePost):
-    author = BaseUser
+class PostWithAuthorSchema(BasePostSchema):
+    author: OutputUserSchema

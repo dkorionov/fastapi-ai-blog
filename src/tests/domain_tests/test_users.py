@@ -2,7 +2,7 @@ import pytest
 from domains.controllers import UserController
 from services.errors import ResourceNotFoundError
 
-from tests.factories.user import UserFactory
+from tests.factories import UserFactory
 
 
 class TestUserController:
@@ -26,9 +26,9 @@ class TestUserController:
     @pytest.mark.anyio
     async def test_list_users(self, provide_user_controller: UserController):
         users_to_create = [UserFactory(id=None) for _ in range(5)]
-        created_count = await provide_user_controller.create_user_bulk(users_to_create)
+        created = await provide_user_controller.create_user_bulk(users_to_create)
         user_list = await provide_user_controller.list()
-        assert created_count == len(user_list)
+        assert len(created) == len(user_list)
         for created_user, user in zip(users_to_create, user_list):
             assert created_user.username == user.username
             assert created_user.email == user.email
@@ -55,8 +55,8 @@ class TestUserController:
     @pytest.mark.anyio
     async def test_create_bulk_users(self, provide_user_controller: UserController):
         users_to_create = [UserFactory(id=None) for _ in range(5)]
-        created_count = await provide_user_controller.create_user_bulk(users_to_create)
-        assert created_count == 5
+        created = await provide_user_controller.create_user_bulk(users_to_create)
+        assert len(created) == 5
 
     @pytest.mark.anyio
     async def test_set_password(self, provide_user_controller: UserController):

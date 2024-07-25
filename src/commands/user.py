@@ -3,7 +3,7 @@ import asyncio
 import click
 from core.config import MainSettings, create_settings
 from core.config.constansts import UserRole
-from services.dependencies.users import get_user_controller
+from services.dependencies.controllers import get_user_controller
 
 
 async def create_admin_command(
@@ -14,8 +14,8 @@ async def create_admin_command(
 ):
     user_controller = get_user_controller(settings=settings)
     password = user_controller.hash_password(password)
-    async with user_controller.db_write_repo.session_factory() as session:
-        new_admin = await user_controller.db_write_repo.create(
+    async with user_controller.write_repo.session_factory() as session:
+        new_admin = await user_controller.write_repo.create(
             session,
             {
                 "username": username,

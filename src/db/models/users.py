@@ -10,10 +10,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from .base import IDMixin, PgBaseModel
 
 if typing.TYPE_CHECKING:
-    from .posts import CommentTable, PostTable
+    from .posts import CommentModel, PostModel
 
 
-class UserTable(PgBaseModel, IDMixin):
+class UserModel(PgBaseModel, IDMixin):
     __tablename__ = "users"
 
     username: Mapped[str] = mapped_column(sqlalchemy.String(64), unique=True, nullable=False)
@@ -35,12 +35,12 @@ class UserTable(PgBaseModel, IDMixin):
         server_default=sqlalchemy.func.now(),
         server_onupdate=sqlalchemy.func.now()
     )
-    user_posts: Mapped[set[PostTable]] = relationship(back_populates="author")
-    user_comments: Mapped[set[CommentTable]] = relationship(back_populates="author")
-    settings: Mapped[UserSettingsTable] = relationship(back_populates="user")
+    user_posts: Mapped[set[PostModel]] = relationship(back_populates="author")
+    user_comments: Mapped[set[CommentModel]] = relationship(back_populates="author")
+    settings: Mapped[UserSettingsModel] = relationship(back_populates="user")
 
 
-class UserSettingsTable(PgBaseModel, IDMixin):
+class UserSettingsModel(PgBaseModel, IDMixin):
     __tablename__ = "user_settings"
 
     user_id: Mapped[int] = mapped_column(
@@ -48,7 +48,7 @@ class UserSettingsTable(PgBaseModel, IDMixin):
         unique=True,
         nullable=False,
     )
-    user: Mapped[UserTable] = relationship(back_populates="settings")
+    user: Mapped[UserModel] = relationship(back_populates="settings")
     auto_comment_answer: Mapped[bool] = mapped_column(
         sqlalchemy.Boolean,
         nullable=False,

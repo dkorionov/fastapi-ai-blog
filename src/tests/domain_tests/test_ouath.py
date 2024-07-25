@@ -2,7 +2,7 @@ import pytest
 from domains.controllers import OauthController, UserController
 from services.schemas.oauth import RegisterSchema
 
-from tests.factories.user import UserFactory
+from tests.factories import UserFactory
 
 
 class TestAuthController:

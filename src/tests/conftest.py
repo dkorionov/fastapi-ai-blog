@@ -6,10 +6,12 @@ from commands.user import create_admin_command
 from core.config import MainSettings, create_settings, create_test_settings
 from db.models.base import PgBaseModel
 from db.utils import clean_db, create_database, drop_database
+from domains.controllers import OauthController, UserController
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from httpx import ASGITransport
 from pydantic import PostgresDsn
+from services.dependencies import get_oauth_controller, get_user_controller
 from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
@@ -109,5 +111,12 @@ async def create_admin(get_test_settings: MainSettings, create_tables):
     )
 
 
+# providers
+@pytest.fixture(scope="function")
+def provide_user_controller(get_test_settings: MainSettings) -> UserController:
+    return get_user_controller(settings=get_test_settings)
 
-## providers
+
+@pytest.fixture(scope="function")
+def provide_auth_controller(get_test_settings: MainSettings) -> OauthController:
+    return get_oauth_controller(settings=get_test_settings)
