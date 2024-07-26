@@ -11,12 +11,17 @@ if typing.TYPE_CHECKING:
 
 
 class PostDTO(BaseModel):
+    __repr_name__ = "post"
+
     id: int | None = Field(default=None)
     title: str
     content: str
     created_at: datetime | None = Field(default=None)
     updated_at: datetime | None = Field(default=None)
     author_id: int
+
+
+class FullPostDTO(PostDTO):
     author: UserDTO | None = Field(default=None)
     post_comments: set[CommentDTO] | None = Field(default=None)
 

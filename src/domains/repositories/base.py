@@ -5,7 +5,16 @@ from typing import Any, Callable, Optional, Sequence, Type, TypeVar
 from db.models.base import PgBaseModel
 from services.errors import ResourceNotFoundError
 from services.errors.base import DuplicateResourceError
-from sqlalchemy import Row, RowMapping, delete, insert, select, update
+from sqlalchemy import (
+    CursorResult,
+    Result,
+    Row,
+    RowMapping,
+    delete,
+    insert,
+    select,
+    update,
+)
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -71,37 +80,29 @@ class PgCreateUpdateDeleteRepository(BaseRepository):
         self.session_factory = session_factory
 
     @handle_errors
-    async def create(self, session: AsyncSession, data: M) -> Optional[M]:
+    async def create(self, session: AsyncSession, data: M) -> M:
         _ = data.pop("id", None)
         obj = self.model(**data)
         session.add(obj)
-        await session.commit()
-        await session.refresh(obj)
         return obj
 
     @handle_errors
-    async def update(self, session: AsyncSession, obj_id: int, data: dict) -> Optional[M]:
-        obj = await session.get(self.model, obj_id)
-        if obj:
-            for key, value in data.items():
-                setattr(obj, key, value)
-            await session.commit()
-            await session.refresh(obj)
-        return obj
+    async def update(self, session: AsyncSession, obj_id: int, data: dict) -> M:
+        stmt = update(self.model).where(self.model.id == obj_id).values(data).returning(self.model)
+        result = await session.execute(stmt)
+        return result.scalars().one()
 
     async def delete(self, session: AsyncSession, obj_id: int):
-        await session.execute(delete(self.model).where(self.model.id == obj_id))
-        await session.commit()
-
-    # @handle_errors
-    async def create_bulk(self, session: AsyncSession, data: list[dict]) -> Sequence[int]:
-        stmt = insert(self.model).values(data).returning(self.model.id)
-        result = await session.execute(stmt)
-        await session.commit()
-        return result.scalars().all()
+        return await session.execute(delete(self.model).where(self.model.id == obj_id))
 
     @handle_errors
-    async def update_bulk(self, session: AsyncSession, updates: list[dict]) -> int:
-        result = await session.execute(update(self.model).values(updates))
-        await session.commit()
-        return result.rowcount()
+    async def create_bulk(self, session: AsyncSession, data: list[dict]) -> Result[tuple[Any]]:
+        stmt = insert(self.model).values(data).returning(self.model.id)
+        return await session.execute(stmt)
+
+    @handle_errors
+    async def update_bulk(self, session: AsyncSession, updates: list[dict]) -> CursorResult[Any]:
+        return await session.execute(update(self.model).values(updates))
+
+    async def delete_bulk(self, session: AsyncSession, obj_ids: list[int]) -> Result[tuple[Any]]:
+        return await session.execute(delete(self.model).where(self.model.id.in_(obj_ids)))

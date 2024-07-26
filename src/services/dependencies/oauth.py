@@ -1,6 +1,8 @@
-from core.config.constansts import UserRole
+from typing import Awaitable, Callable, Type
+
 from domains.controllers import UserController
-from domains.dto import UserDTO
+from domains.dto import AbstractDTO, UserDTO
+from domains.permissions import AbstractObjectPermission, get_permission_table
 from fastapi import Depends, Request
 from fastapi.security import HTTPAuthorizationCredentials
 
@@ -31,10 +33,46 @@ async def get_current_active_user(
     return await user_controller.get(request.state.user_id)
 
 
-def has_permission(roles: list[UserRole]):
-    async def permission_checker(user: UserDTO = Depends(get_current_active_user)) -> bool:
-        if user.role not in roles:
-            raise PermissionDeniedError
-        return True
+def check_object_permission(
+        operation: str,
+        user: UserDTO,
+        item: AbstractDTO,
+) -> bool:
+    permission_table = get_permission_table()
+    object_permission_class: Type[AbstractObjectPermission] = permission_table.get(item.__repr_name__)
+    object_permission = object_permission_class.get_object_lvl_permission(item)
+    for permission in object_permission:
+        if operation == permission[0]:
+            allowed_roles = permission[1]
+            return "all" in allowed_roles or user.role in allowed_roles or user.id in allowed_roles
+    return False
 
-    return permission_checker
+
+def check_operation_permission(
+        operation: str,
+        user: UserDTO,
+):
+    model_name = operation.split(":")[0]
+    permission_table = get_permission_table()
+    object_permission_class: Type[AbstractObjectPermission] = permission_table.get(model_name)
+    operation_permission = object_permission_class.get_operation_lvl_permission()
+    for permission in operation_permission:
+        if operation == permission[0]:
+            allowed_roles = permission[1]
+            if "all" in allowed_roles or user.role.value in allowed_roles:
+                return
+    raise PermissionDeniedError
+
+
+def check_route_permission(
+        operation: str,
+):
+    def wrapper(func: Callable[..., Awaitable]):
+        async def inner(*args, **kwargs):
+            user = await get_current_active_user(kwargs.get("request"))
+            check_operation_permission(operation, user)
+            return await func(*args, **kwargs)
+
+        return inner
+
+    return wrapper

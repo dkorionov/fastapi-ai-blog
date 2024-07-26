@@ -26,7 +26,7 @@ def get_oauth_controller(
     )
 
 
-def get_posts_controller(
+def get_post_controller(
         settings: MainSettings = Depends(create_settings)
 ) -> PostController:
     return provide_post_controller(

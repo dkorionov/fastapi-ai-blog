@@ -1,22 +1,21 @@
 from abc import ABC
-from typing import Dict, NamedTuple, Type, TypeVar
+from typing import Dict, List, NamedTuple, Sequence, Type
 
-import pydantic
-
+from domains.dto import AbstractDTO
 from domains.repositories.base import (
+    BaseRepository,
     PgCreateUpdateDeleteRepository,
     PgGetListRepository,
 )
 
-BaseDTO = TypeVar("BaseDTO", bound=pydantic.BaseModel)
-
 
 class BaseController(ABC):
-    pass
+    model_dto: Type[AbstractDTO]
+    red_repo: BaseRepository | None = None
+    write_repo: BaseRepository | None = None
 
 
 class BaseCrudController(BaseController):
-    model_dto: Type[BaseDTO]
     read_repo: PgGetListRepository
     write_repo: PgCreateUpdateDeleteRepository
 
@@ -24,24 +23,25 @@ class BaseCrudController(BaseController):
             self, filters: Dict | NamedTuple | None = None,
             offset: int = 0,
             limit: int = 10
-    ) -> list[BaseDTO]:
+    ) -> list[AbstractDTO]:
         async with self.read_repo.session_factory() as session:
             users_in_db = await self.read_repo.list(session, filters, offset, limit)
             return [self.model_dto.model_validate(user, from_attributes=True) for user in users_in_db]
 
-    async def get(self, item_id: int) -> BaseDTO:
+    async def get(self, item_id: int) -> AbstractDTO:
         async with self.read_repo.session_factory() as session:
-            user_in_db = await self.read_repo.get(session, item_id)
-            return self.model_dto.model_validate(user_in_db, from_attributes=True)
+            item = await self.read_repo.get(session, item_id)
+            return self.model_dto.model_validate(item, from_attributes=True)
 
-    async def create(self, item: BaseDTO) -> BaseDTO:
+    async def create(self, item: AbstractDTO) -> AbstractDTO:
         async with self.write_repo.session_factory() as session:
             created_object = await self.write_repo.create(
                 session, item.model_dump(exclude={"id"}, exclude_unset=True)
             )
+            await session.commit()
         return self.model_dto.model_validate(created_object, from_attributes=True)
 
-    async def update(self, item: BaseDTO) -> BaseDTO:
+    async def update(self, item: AbstractDTO) -> AbstractDTO:
         async with self.write_repo.session_factory() as session:
             updated_user = await self.write_repo.update(
                 session,
@@ -51,8 +51,30 @@ class BaseCrudController(BaseController):
                     exclude_unset=True
                 )
             )
+            await session.commit()
             return self.model_dto.model_validate(updated_user, from_attributes=True)
 
     async def delete(self, item_id: int):
         async with self.write_repo.session_factory() as session:
             await self.write_repo.delete(session, item_id)
+            await session.commit()
+
+    async def create_bulk(self, items: List[AbstractDTO]) -> Sequence[int]:
+        async with self.write_repo.session_factory() as session:
+            items_to_create = []
+            for item in items:
+                user_data = item.model_dump(exclude={"id"}, exclude_unset=True)
+                items_to_create.append(user_data)
+            result = await self.write_repo.create_bulk(session, items_to_create)
+            await session.commit()
+            return result.scalars().all()
+
+    async def update_bulk(self, items: List[AbstractDTO]) -> Sequence[int]:
+        async with self.write_repo.session_factory() as session:
+            items_to_update = []
+            for item in items:
+                item_data = item.model_dump(exclude_unset=True)
+                items_to_update.append(item_data)
+            result = await self.write_repo.update_bulk(session, items_to_update)
+            await session.commit()
+            return result.scalars().all()

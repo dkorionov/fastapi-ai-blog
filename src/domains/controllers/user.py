@@ -28,6 +28,7 @@ class UserController(BaseCrudController):
             created_user = await self.write_repo.create(
                 session, user_data
             )
+            await session.commit()
             return UserDTO.model_validate(created_user, from_attributes=True)
 
     async def create_user_bulk(self, users: List[UserDTO]) -> Sequence[int]:
@@ -37,18 +38,22 @@ class UserController(BaseCrudController):
                 user_data = user.model_dump(exclude={"id"}, exclude_unset=True)
                 user_data["password"] = self.oauth_service.hash_password(user_data["password"])
                 users_to_create.append(user_data)
-            return await self.write_repo.create_bulk(session, users_to_create)
+            result = await self.write_repo.create_bulk(session, users_to_create)
+            await session.commit()
+            return result.scalars().all()
 
     async def update(self, user: UserDTO) -> UserDTO:
         async with self.write_repo.session_factory() as session:
-            user_data = user.model_dump(exclude={"password"}, exclude_unset=True)
+            user_data = user.model_dump(exclude={"password"}, exclude_unset=True, exclude_none=True)
             updated_user = await self.write_repo.update(session, user.id, user_data)
+            await session.commit()
             return UserDTO.model_validate(updated_user, from_attributes=True)
 
     async def set_password(self, user_id: int, password: str):
         hashed_password = self.oauth_service.hash_password(password)
         async with self.write_repo.session_factory() as session:
-            return await self.write_repo.set_password(session, user_id, hashed_password)
+            await self.write_repo.set_password(session, user_id, hashed_password)
+            await session.commit()
 
     def hash_password(self, password: str) -> str:
         return self.oauth_service.hash_password(password)

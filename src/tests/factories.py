@@ -1,6 +1,6 @@
 import factory
 from core.config.constansts import UserRole
-from domains.dto import UserDTO
+from domains.dto import PostDTO, UserDTO
 
 
 class UserFactory(factory.Factory):
@@ -11,3 +11,12 @@ class UserFactory(factory.Factory):
     email = factory.Faker("email")
     role = UserRole.USER
     password = factory.Faker("password")
+
+
+class PostFactory(factory.Factory):
+    class Meta:
+        model = PostDTO
+        strategy = factory.BUILD_STRATEGY
+
+    title = factory.Faker("sentence")
+    content = factory.Faker("text")

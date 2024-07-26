@@ -16,6 +16,9 @@ class CommentDTO(BaseModel):
     created_at: datetime | None = Field(default=None)
     updated_at: datetime | None = Field(default=None)
     post_id: int
-    post: PostDTO | None = Field(default=None)
     author_id: int
+
+
+class FullCommentDTO(CommentDTO):
+    post: PostDTO | None = Field(default=None)
     author: UserDTO | None = Field(default=None)
