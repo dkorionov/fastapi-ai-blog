@@ -1,14 +1,20 @@
 from datetime import datetime, timedelta, timezone
-from typing import Literal
+from typing import Literal, Type
 
 import jwt
 from core.config import SecuritySettings
+from domains.dto import AbstractDTO, UserDTO
+from domains.permissions import AbstractObjectPermission, get_permission_table
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi.security.utils import get_authorization_scheme_param
 from passlib.context import CryptContext
 from starlette.requests import Request
 
-from services.errors.oauth import InvalidTokenTypeError, UnauthorizedError
+from services.errors.oauth import (
+    InvalidTokenTypeError,
+    PermissionDeniedError,
+    UnauthorizedError,
+)
 
 
 class CustomHTTPBearer(HTTPBearer):
@@ -79,3 +85,34 @@ class JwtAuthService:
 
     def hash_password(self, password: str) -> str:
         return self._pwd_context.hash(password)
+
+
+def check_object_permission(
+        operation: str,
+        user: UserDTO,
+        item: AbstractDTO,
+) -> bool:
+    permission_table = get_permission_table()
+    object_permission_class: Type[AbstractObjectPermission] = permission_table.get(item.__repr_name__)
+    object_permission = object_permission_class.get_object_lvl_permission(item)
+    for permission in object_permission:
+        if operation == permission[0]:
+            allowed_roles = permission[1]
+            return "all" in allowed_roles or user.role in allowed_roles or user.id in allowed_roles
+    return False
+
+
+def check_operation_permission(
+        operation: str,
+        user: UserDTO,
+):
+    model_name = operation.split(":")[0]
+    permission_table = get_permission_table()
+    object_permission_class: Type[AbstractObjectPermission] = permission_table.get(model_name)
+    operation_permission = object_permission_class.get_operation_lvl_permission()
+    for permission in operation_permission:
+        if operation == permission[0]:
+            allowed_roles = permission[1]
+            if "all" in allowed_roles or user.role.value in allowed_roles:
+                return
+    raise PermissionDeniedError

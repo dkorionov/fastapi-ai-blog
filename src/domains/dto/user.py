@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 class UserDTO(pydantic.BaseModel):
-    __repr_name__ = "user"
+    __repr_name__ = "User"
 
     id: int | None = pydantic.Field(default=None)
     username: str

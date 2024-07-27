@@ -9,7 +9,8 @@ from core.config.constansts import UserRole
 from domains.dto import AbstractDTO, PostDTO, UserDTO
 
 __all__ = [
-    "get_permission_table"
+    "get_permission_table",
+    "OperationPermission"
 ]
 
 from domains.dto.comment import FullCommentDTO

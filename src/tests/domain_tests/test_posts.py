@@ -2,6 +2,7 @@ import pytest
 from domains.controllers import PostController
 from domains.dto import UserDTO
 from factories import PostFactory
+from services.errors import ResourceNotFoundError
 
 
 class TestPosts:
@@ -55,3 +56,15 @@ class TestPosts:
         updated_post = await provide_post_controller.update(created_post)
         assert updated_post.title == created_post.title
         assert updated_post.content == created_post.content
+
+    @pytest.mark.anyio
+    async def test_delete_post(
+            self,
+            provide_post_controller: PostController,
+            provide_author: UserDTO
+    ):
+        post_to_create = PostFactory(id=None, author_id=provide_author.id)
+        created_post = await provide_post_controller.create(post_to_create)
+        await provide_post_controller.delete(created_post.id)
+        with pytest.raises(ResourceNotFoundError):
+            await provide_post_controller.get(created_post.id)

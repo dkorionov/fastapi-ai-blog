@@ -7,13 +7,13 @@ from services.dependencies.controllers import get_post_controller
 from services.dependencies.filters import Pagination, get_pagination, get_post_filters
 from services.dependencies.oauth import (
     add_auth_user_id_to_request,
-    check_object_permission,
     check_operation_permission,
     check_route_permission,
     get_current_active_user,
 )
 from services.schemas.posts import InputPostSchema, PostWithAuthorSchema
 from services.schemas.user import OutputUserSchema
+from services.security.oauth import check_object_permission
 
 router = APIRouter(
     dependencies=[Depends(add_auth_user_id_to_request)],

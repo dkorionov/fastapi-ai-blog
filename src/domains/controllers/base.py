@@ -3,7 +3,6 @@ from typing import Dict, List, NamedTuple, Sequence, Type
 
 from domains.dto import AbstractDTO
 from domains.repositories.base import (
-    BaseRepository,
     PgCreateUpdateDeleteRepository,
     PgGetListRepository,
 )
@@ -11,8 +10,8 @@ from domains.repositories.base import (
 
 class BaseController(ABC):
     model_dto: Type[AbstractDTO]
-    red_repo: BaseRepository | None = None
-    write_repo: BaseRepository | None = None
+    red_repo = PgGetListRepository
+    write_repo: PgCreateUpdateDeleteRepository
 
 
 class BaseCrudController(BaseController):
