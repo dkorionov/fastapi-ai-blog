@@ -4,21 +4,14 @@ import httpx
 import pytest
 from commands.user import create_admin_command
 from core.config import MainSettings, create_settings, create_test_settings
+from db import Database
 from db.models.base import PgBaseModel
 from db.utils import clean_db, create_database, drop_database
-from domains.controllers import OauthController, PostController, UserController
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from httpx import ASGITransport
 from pydantic import PostgresDsn
-from services.dependencies import (
-    get_oauth_controller,
-    get_post_controller,
-    get_user_controller,
-)
-from sqlalchemy.ext.asyncio import (
-    create_async_engine,
-)
+from sqlalchemy import Engine, create_engine
 from web import server as init_server
 
 load_dotenv()
@@ -42,7 +35,7 @@ def get_test_settings() -> MainSettings:
 @pytest.fixture(scope="session")
 def get_db_url_and_name(get_test_settings: MainSettings) -> tuple[str, str]:
     return str(PostgresDsn.build(
-        scheme="postgresql+asyncpg",
+        scheme="postgresql",
         username=get_test_settings.db.DB_USER,
         password=get_test_settings.db.DB_PASSWORD,
         host=get_test_settings.db.DB_HOST,
@@ -50,36 +43,39 @@ def get_db_url_and_name(get_test_settings: MainSettings) -> tuple[str, str]:
     )), get_test_settings.db.DB_NAME
 
 
+@pytest.fixture(scope="session")
+def get_db_url(get_db_url_and_name: tuple[str, str]) -> str:
+    return f"{get_db_url_and_name[0]}/{get_db_url_and_name[1]}"
+
+
 @pytest.fixture(scope="session", autouse=True)
-async def setup_database(get_db_url_and_name: tuple[str, str]) -> AsyncGenerator:
+def setup_database(get_db_url_and_name: tuple[str, str]) -> AsyncGenerator:
     db_url, db_name = get_db_url_and_name
     try:
         print("Creating Database")
-        yield await create_database(db_url, db_name)
+        yield create_database(db_url, db_name)
     finally:
         print("Dropping Database")
-        await drop_database(db_url, db_name)
+        drop_database(db_url, db_name)
 
 
 @pytest.fixture(scope="session")
-def engine(get_test_settings: MainSettings, setup_database):
-    return create_async_engine(get_test_settings.db.DB_CONNECTION_URL, echo=True, future=True)
+def engine(get_test_settings: MainSettings, get_db_url: str) -> Engine:
+    return create_engine(get_db_url, echo=True, future=True)
 
 
 @pytest.fixture(scope="session", autouse=True)
-async def create_tables(engine):
-    async with engine.begin() as conn:
-        print("Creating tables")
-        await conn.run_sync(PgBaseModel.metadata.create_all)
+def create_tables(engine: Engine, setup_database):
+    PgBaseModel.metadata.create_all(engine)
 
 
 @pytest.fixture(scope="function", autouse=True)
-async def clean_database(engine, get_test_settings):
-    await clean_db(db_url=get_test_settings.db.DB_CONNECTION_URL)
+def clean_database(engine: Engine, get_db_url: str):
+    clean_db(db_url=get_db_url)
 
 
 @pytest.fixture
-async def fastapi_app() -> FastAPI:
+def fastapi_app() -> FastAPI:
     """
     Fixture for creating FastAPI app.
 
@@ -105,6 +101,11 @@ async def async_client(fastapi_app: FastAPI) -> AsyncGenerator[httpx.AsyncClient
         yield client
 
 
+@pytest.fixture(scope="session")
+def database_connect(get_test_settings: MainSettings):
+    return Database(get_test_settings.db)
+
+
 @pytest.fixture(scope="session", autouse=True)
 async def create_admin(get_test_settings: MainSettings, create_tables):
     await create_admin_command(
@@ -113,19 +114,3 @@ async def create_admin(get_test_settings: MainSettings, create_tables):
         password=get_test_settings.admin.password,
         settings=get_test_settings
     )
-
-
-# providers
-@pytest.fixture(scope="function")
-def provide_user_controller(get_test_settings: MainSettings) -> UserController:
-    return get_user_controller(settings=get_test_settings)
-
-
-@pytest.fixture(scope="function")
-def provide_auth_controller(get_test_settings: MainSettings) -> OauthController:
-    return get_oauth_controller(settings=get_test_settings)
-
-
-@pytest.fixture(scope="function")
-def provide_post_controller(get_test_settings: MainSettings) -> PostController:
-    return get_post_controller(settings=get_test_settings)

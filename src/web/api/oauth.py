@@ -1,14 +1,18 @@
-from domains.controllers.oauth import OauthController
+from db import Database
+from db.models import UserModel
 from fastapi import APIRouter, Depends, status
-from services.dependencies import (
-    get_oauth_controller,
-)
-from services.schemas.oauth import (
+from schemas.oauth import (
     LoginSchema,
     RefreshTokenInputSchema,
     RegisterSchema,
     ResponseTokenScheme,
 )
+from schemas.users import OutputUserSchema
+from services.errors import InvalidCredentialsError
+from services.oauth import JwtAuthService
+from services.repositories.users import UserRepository
+
+from web.dependencies import inject_database, inject_jwt_service
 
 router = APIRouter()
 
@@ -25,11 +29,18 @@ refresh_token_url_name = "refresh-token"
 )
 async def login(
         data: LoginSchema,
-        oauth_controller: OauthController = Depends(get_oauth_controller)
+        jwt_service: JwtAuthService = Depends(inject_jwt_service),
+        db: Database = Depends(inject_database),
+        repository: UserRepository = Depends(UserRepository)
+
 ) -> ResponseTokenScheme:
-    user, tokens = await oauth_controller.login(data.username, data.password)
+    async with db.get_async_session() as session:
+        user = await repository.get_by_username(session, data.username)
+    if not jwt_service.verify_password(data.password, user.password):
+        raise InvalidCredentialsError
+    tokens = jwt_service.generate_jwt_tokens(user.id)
     return ResponseTokenScheme(
-        **user.model_dump(),
+        **OutputUserSchema.model_validate(user, from_attributes=True).model_dump(),
         **tokens
     )
 
@@ -42,11 +53,17 @@ async def login(
 )
 async def register(
         data: RegisterSchema,
-        oauth_controller: OauthController = Depends(get_oauth_controller)
+        jwt_service: JwtAuthService = Depends(inject_jwt_service),
+        db: Database = Depends(inject_database),
+        repository: UserRepository = Depends(UserRepository)
 ) -> ResponseTokenScheme:
-    user, tokens = await oauth_controller.register(data.model_dump())
+    user = UserModel(**data.model_dump())
+    user.password = jwt_service.hash_password(data.password)
+    async with db.get_async_session() as session:
+        await repository.create(session, user)
+    tokens = jwt_service.generate_jwt_tokens(user.id)
     return ResponseTokenScheme(
-        **user.model_dump(),
+        **OutputUserSchema.model_validate(user, from_attributes=True).model_dump(),
         **tokens
     )
 
@@ -59,10 +76,14 @@ async def register(
 )
 async def refresh_token(
         refresh_token_data: RefreshTokenInputSchema,
-        oauth_controller: OauthController = Depends(get_oauth_controller)
+        jwt_service: JwtAuthService = Depends(inject_jwt_service),
+        db: Database = Depends(inject_database),
+        repository: UserRepository = Depends(UserRepository)
 ) -> ResponseTokenScheme:
-    user, tokens = await oauth_controller.refresh_access_token(refresh_token_data.refresh_token)
+    tokens, user_id = jwt_service.refresh_token(refresh_token_data.refresh_token)
+    async with db.get_async_session() as session:
+        user = await repository.get(session, user_id)
     return ResponseTokenScheme(
-        **user.model_dump(),
+        **OutputUserSchema.model_validate(user, from_attributes=True).model_dump(),
         **tokens
     )

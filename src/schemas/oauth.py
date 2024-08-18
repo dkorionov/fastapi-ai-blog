@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field
 
-from .user import BaseUserSchema
+from schemas.users import OutputUserSchema
 
 
 class LoginSchema(BaseModel):
@@ -12,7 +12,7 @@ class RegisterSchema(LoginSchema):
     email: EmailStr = Field(..., description="User email")
 
 
-class ResponseTokenScheme(BaseUserSchema):
+class ResponseTokenScheme(OutputUserSchema):
     access_token: str
     refresh_token: str
     access_token_expires_at: float

@@ -1,17 +1,16 @@
 import pytest
+from factories.users import UserFactory
 from fastapi import FastAPI, status
 from httpx import AsyncClient
-from services.schemas.oauth import RegisterSchema
+from schemas.oauth import RegisterSchema
 from web.api.oauth import login_url_name, refresh_token_url_name, register_url_name
 
-from tests.factories import UserFactory
 
-
+@pytest.mark.anyio
 class TestAuthAPI:
-    test_user = UserFactory(id=None)
     user_password = "test"
+    test_user = UserFactory(password=user_password)
 
-    @pytest.mark.anyio
     async def test_register(self, async_client: AsyncClient, fastapi_app: FastAPI):
         url = fastapi_app.url_path_for(register_url_name)
         data = RegisterSchema(
@@ -24,7 +23,6 @@ class TestAuthAPI:
         assert response.json()["username"] == data["username"]
         assert response.json()["email"] == data["email"]
 
-    @pytest.mark.anyio
     async def test_login(self, async_client: AsyncClient, fastapi_app: FastAPI):
         await self.test_register(async_client, fastapi_app)
         url = fastapi_app.url_path_for(login_url_name)
@@ -39,7 +37,6 @@ class TestAuthAPI:
         assert response_data["access_token"]
         assert response_data["refresh_token"]
 
-    @pytest.mark.anyio
     async def test_refresh_token(self, async_client: AsyncClient, fastapi_app: FastAPI):
         await self.test_register(async_client, fastapi_app)
         url_login = fastapi_app.url_path_for(login_url_name)

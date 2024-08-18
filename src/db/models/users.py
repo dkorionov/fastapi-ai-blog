@@ -7,13 +7,13 @@ import sqlalchemy
 from core.config.constansts import UserRole
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .base import IDMixin, PgBaseModel
+from .base import AbstractModel
 
 if typing.TYPE_CHECKING:
     from .posts import CommentModel, PostModel
 
 
-class UserModel(PgBaseModel, IDMixin):
+class UserModel(AbstractModel):
     __tablename__ = "users"
 
     username: Mapped[str] = mapped_column(sqlalchemy.String(64), unique=True, nullable=False)
@@ -40,7 +40,7 @@ class UserModel(PgBaseModel, IDMixin):
     settings: Mapped[UserSettingsModel] = relationship(back_populates="user")
 
 
-class UserSettingsModel(PgBaseModel, IDMixin):
+class UserSettingsModel(AbstractModel):
     __tablename__ = "user_settings"
 
     user_id: Mapped[int] = mapped_column(

@@ -1,40 +1,44 @@
-from domains.controllers import UserController
-from domains.permissions import OperationPermission
-from fastapi import APIRouter, Depends, Request
-from services.dependencies import get_user_controller
-from services.dependencies.oauth import (
-    add_auth_user_id_to_request,
-    check_operation_permission,
-    get_current_active_user,
-)
-from services.schemas.user import OutputUserSchema
+from db import Database
+from fastapi import APIRouter, Depends
+from fastapi.requests import Request
+from schemas.users import OutputUserSchema
+from services.permissions import check_operation_permission
+from services.permissions.base import OperationPermission
+from services.repositories.users import UserRepository
+
+from web.dependencies import inject_database
+from web.dependencies.oauth import add_auth_user_to_request
 
 me_url_name = "users_me"
 user_all_url_name = "users_all"
 
 router = APIRouter(dependencies=[
-    Depends(add_auth_user_id_to_request),
+    Depends(add_auth_user_to_request),
 ])
 
 
 @router.get("/me", name=me_url_name)
 async def get_me(
         request: Request,
-        user_controller: UserController = Depends(get_user_controller)
+        db: Database = Depends(inject_database),
+        repository: UserRepository = Depends(UserRepository),
 ) -> OutputUserSchema:
-    output_user = await user_controller.get(request.state.user_id)
-    return OutputUserSchema.model_validate(output_user, from_attributes=True)
+    async with db.get_async_session() as session:
+        user = await repository.get(session, request.state.user.id)
+    return OutputUserSchema.model_validate(user, from_attributes=True)
 
 
 @router.get("/all", name=user_all_url_name)
 async def get_all(
         request: Request,
-        user_controller: UserController = Depends(get_user_controller),
+        db: Database = Depends(inject_database),
+        repository: UserRepository = Depends(UserRepository),
 
 ) -> list[OutputUserSchema]:
-    active_user = await get_current_active_user(request, user_controller)
-    check_operation_permission(OperationPermission.User.can_view_list, active_user)
+    check_operation_permission(OperationPermission.User.can_view_list, request.state.user)
+    async with db.get_async_session() as session:
+        users = await repository.list(session)
     return [
         OutputUserSchema.model_validate(user, from_attributes=True)
-        for user in await user_controller.list()
+        for user in users
     ]

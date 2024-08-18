@@ -1,8 +1,7 @@
 from core.config import MainSettings, create_settings
 from db import Database
 from fastapi import Depends
-
-from services.security import JwtAuthService
+from services.oauth import JwtAuthService
 
 
 def inject_database(

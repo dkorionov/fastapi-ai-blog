@@ -2,12 +2,17 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
-from services.schemas.user import OutputUserSchema
+from schemas.users import OutputUserSchema
 
 
 class InputPostSchema(BaseModel):
     title: str
     content: str
+
+
+class UpdatePostSchema(BaseModel):
+    title: str | None = None
+    content: str | None = None
 
 
 class BasePostSchema(BaseModel):

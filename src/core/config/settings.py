@@ -7,7 +7,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class BaseEnvSettings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(env_file="../.env", env_file_encoding="utf-8", extra="ignore")
 
 
 class EnvironmentSettings(BaseEnvSettings):
@@ -34,7 +34,7 @@ class PostgresDBSettings(BaseEnvSettings):
 
     @field_validator("DB_CONNECTION_URL", mode="after")
     @classmethod
-    def get_db_connection_url(cls, value: str | None, info: ValidationInfo) -> PostgresDsn | str:
+    def get_db_async_connection_url(cls, value: str | None, info: ValidationInfo) -> PostgresDsn | str:
         if value is not None:
             return value
 

@@ -1,16 +1,22 @@
+from typing import cast
+
 import pytest
 from core.config.constansts import UserRole
-from domains.controllers import UserController
+from db import Database
+from db.models import UserModel
+from factories.users import UserFactory
 from fastapi import FastAPI
 from httpx import AsyncClient
+from services.oauth import JwtAuthService
+from services.repositories.users import UserRepository
 from starlette import status
 from web.api.users import me_url_name, user_all_url_name
 
 from tests.api_tests.conftest import login_client
-from tests.factories import UserFactory
 
 
 class TestUserAPI:
+    repository = UserRepository()
 
     @pytest.mark.anyio
     async def test_me_unauthorized(self, async_client: AsyncClient, fastapi_app: FastAPI):
@@ -23,30 +29,36 @@ class TestUserAPI:
             self,
             async_client: AsyncClient,
             fastapi_app: FastAPI,
-            provide_user_controller: UserController
+            database_connect: Database,
+            get_jwt_service: JwtAuthService,
     ):
+        async with database_connect.get_async_session() as session:
+            user = await self.repository.create(session, UserFactory(id=None))
+            user = cast(UserModel, user)
+
+        login_client(async_client, user.id, get_jwt_service)
         url = fastapi_app.url_path_for(me_url_name)
-        user_to_create = UserFactory(id=None)
-        created_user = await provide_user_controller.create(user_to_create)
-        login_client(async_client, created_user.id, provide_user_controller.oauth_service)
         response = await async_client.get(url)
         response_data = response.json()
         assert response.status_code == status.HTTP_200_OK
-        assert response_data["username"] == user_to_create.username
-        assert response_data["email"] == user_to_create.email
-        assert response_data["id"] == created_user.id
+        assert response_data["username"] == user.username
+        assert response_data["email"] == user.email
+        assert response_data["id"] == user.id
 
     @pytest.mark.anyio
     async def test_all_permission_denied(
             self,
             async_client: AsyncClient,
             fastapi_app: FastAPI,
-            provide_user_controller: UserController
+            database_connect: Database,
+            get_jwt_service: JwtAuthService,
     ):
         url = fastapi_app.url_path_for(user_all_url_name)
-        user_to_create = UserFactory(id=None)
-        created_user = await provide_user_controller.create(user_to_create)
-        login_client(async_client, created_user.id, provide_user_controller.oauth_service)
+        async with database_connect.get_async_session() as session:
+            user = await self.repository.create(session, UserFactory(id=None))
+            user = cast(UserModel, user)
+
+        login_client(async_client, user.id, get_jwt_service)
         response = await async_client.get(url)
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
@@ -55,13 +67,15 @@ class TestUserAPI:
             self,
             async_client: AsyncClient,
             fastapi_app: FastAPI,
-            provide_user_controller: UserController
+            database_connect: Database,
+            get_jwt_service: JwtAuthService,
     ):
         url = fastapi_app.url_path_for(user_all_url_name)
-        admin_to_create = UserFactory(id=None, role=UserRole.ADMIN)
-        await provide_user_controller.create_user_bulk([UserFactory(id=None) for _ in range(5)])
-        created_admin = await provide_user_controller.create(admin_to_create)
-        login_client(async_client, created_admin.id, provide_user_controller.oauth_service)
+        async with database_connect.get_async_session() as session:
+            admin = await self.repository.create(session, UserFactory(id=None, role=UserRole.ADMIN))
+            await self.repository.create_bulk(session, [UserFactory(id=None) for _ in range(5)])
+
+        login_client(async_client, admin.id, get_jwt_service)
         response = await async_client.get(url)
         response_data = response.json()
         assert response.status_code == status.HTTP_200_OK

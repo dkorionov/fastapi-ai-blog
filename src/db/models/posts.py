@@ -6,13 +6,13 @@ from datetime import datetime
 import sqlalchemy
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from .base import IDMixin, PgBaseModel
+from .base import AbstractModel
 
 if typing.TYPE_CHECKING:
     from .users import UserModel
 
 
-class PostModel(PgBaseModel, IDMixin):
+class PostModel(AbstractModel):
     __tablename__ = "posts"
 
     title: Mapped[str] = mapped_column(sqlalchemy.String(128), nullable=False)
@@ -33,7 +33,7 @@ class PostModel(PgBaseModel, IDMixin):
     post_comments: Mapped[set[CommentModel]] = relationship(back_populates="post")
 
 
-class CommentModel(PgBaseModel, IDMixin):
+class CommentModel(AbstractModel):
     __tablename__ = "comments"
 
     content: Mapped[str] = mapped_column(sqlalchemy.Text, nullable=False)

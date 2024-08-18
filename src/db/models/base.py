@@ -22,3 +22,8 @@ class PgBaseModel(DeclarativeBase):
 
 class IDMixin:
     id: Mapped[int] = mapped_column(sqlalchemy.Integer, primary_key=True, autoincrement=True, unique=True)
+
+
+class AbstractModel(PgBaseModel, IDMixin):
+    __abstract__ = True
+

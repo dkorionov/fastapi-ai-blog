@@ -1,7 +1,7 @@
 import pytest
 from core.config import MainSettings
 from httpx import AsyncClient
-from services.security import JwtAuthService
+from services.oauth import JwtAuthService
 
 
 @pytest.fixture(scope="module")

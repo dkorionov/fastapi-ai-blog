@@ -1,10 +1,5 @@
-import datetime
-from collections import namedtuple
-
-from domains.dto.post import PostFilter
 from fastapi import Query
-
-Pagination = namedtuple("Pagination", ["limit", "offset"])
+from services.filters import Pagination, PostFilter
 
 
 def get_pagination(
@@ -14,15 +9,18 @@ def get_pagination(
     return Pagination(limit, offset)
 
 
+def get_ordering(
+        order_by: list[str] = Query(None)
+) -> list[str]:
+    return order_by
+
+
 def get_post_filters(
         title: str = Query(None),
         author_id: int = Query(None),
-        created_at: datetime.datetime = Query(None),
-        updated_at: datetime.datetime = Query(None)
+
 ) -> PostFilter:
     return PostFilter(
         title=title,
         author_id=author_id,
-        created_at=created_at,
-        updated_at=updated_at
     )

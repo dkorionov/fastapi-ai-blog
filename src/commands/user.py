@@ -3,7 +3,9 @@ import asyncio
 import click
 from core.config import MainSettings, create_settings
 from core.config.constansts import UserRole
-from services.dependencies.controllers import get_user_controller
+from db import Database
+from db.models import UserModel
+from services.oauth import JwtAuthService
 
 
 async def create_admin_command(
@@ -12,18 +14,18 @@ async def create_admin_command(
         password: str,
         settings: MainSettings
 ):
-    user_controller = get_user_controller(settings=settings)
-    password = user_controller.hash_password(password)
-    async with user_controller.write_repo.session_factory() as session:
-        new_admin = await user_controller.write_repo.create(
-            session,
-            {
-                "username": username,
-                "email": email,
-                "password": password,
-                "role": UserRole.ADMIN
-            }
+    db = Database(settings.db)
+    jwt_service = JwtAuthService(security_settings=settings.security)
+    password = jwt_service.hash_password(password)
+    async with db.get_async_session() as session:
+        new_admin = UserModel(
+            username=username,
+            email=email,
+            password=password,
+            role=UserRole.ADMIN
         )
+        session.add(new_admin)
+        await session.commit()
 
     click.echo(f"User {new_admin.username} has been created")
 
