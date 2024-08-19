@@ -48,6 +48,13 @@ repos:
         types: [ python ]
         stages: [ manual ]
 
+      - id: ruff
+        name: ruff
+        entry: ruff check . --fix
+        language: python
+        types: [ python ]
+        exclude: ^migrations/
+
       - id: pdm-lock-check
         name: pdm-lock-check
         description: run pdm lock --check to validate config
