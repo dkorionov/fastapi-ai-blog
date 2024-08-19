@@ -1,7 +1,12 @@
 from typing import Tuple
 
 from db.models import UserModel
-from services.permissions.base import AbstractObjectPermission, OperationPermission, PermissionRoles
+
+from services.permissions.base import (
+    AbstractObjectPermission,
+    OperationPermission,
+    PermissionRoles,
+)
 
 
 class UserPermission(AbstractObjectPermission):
