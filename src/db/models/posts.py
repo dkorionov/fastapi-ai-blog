@@ -29,7 +29,7 @@ class PostModel(AbstractModel):
         server_onupdate=sqlalchemy.func.now()
     )
     author_id: Mapped[int] = mapped_column(sqlalchemy.ForeignKey("users.id"), nullable=False)
-    author: Mapped[UserModel] = relationship(back_populates="user_posts")
+    author: Mapped[UserModel] = relationship(back_populates="user_posts", lazy="selectin")
     post_comments: Mapped[set[CommentModel]] = relationship(back_populates="post")
 
 
@@ -49,6 +49,6 @@ class CommentModel(AbstractModel):
         server_onupdate=sqlalchemy.func.now()
     )
     post_id: Mapped[int] = mapped_column(sqlalchemy.ForeignKey("posts.id"), nullable=False)
-    post: Mapped[PostModel] = relationship(back_populates="post_comments")
+    post: Mapped[PostModel] = relationship(back_populates="post_comments", lazy="selectin")
     author_id: Mapped[int] = mapped_column(sqlalchemy.ForeignKey("users.id"), nullable=False)
-    author: Mapped[UserModel] = relationship(back_populates="user_comments")
+    author: Mapped[UserModel] = relationship(back_populates="user_comments", lazy="selectin")

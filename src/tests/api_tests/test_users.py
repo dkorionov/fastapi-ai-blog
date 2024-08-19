@@ -4,15 +4,14 @@ import pytest
 from core.config.constansts import UserRole
 from db import Database
 from db.models import UserModel
-from factories.users import UserFactory
+from factories import UserFactory
 from fastapi import FastAPI
 from httpx import AsyncClient
 from services.oauth import JwtAuthService
 from services.repositories.users import UserRepository
 from starlette import status
-from web.api.users import me_url_name, user_all_url_name
-
 from tests.api_tests.conftest import login_client
+from web.api.users import me_url_name, user_all_url_name
 
 
 class TestUserAPI:

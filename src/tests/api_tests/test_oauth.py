@@ -1,5 +1,5 @@
 import pytest
-from factories.users import UserFactory
+from factories import UserFactory
 from fastapi import FastAPI, status
 from httpx import AsyncClient
 from schemas.oauth import RegisterSchema

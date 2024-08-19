@@ -1,7 +1,12 @@
 from typing import Tuple
 
 from db.models import CommentModel
-from services.permissions.base import AbstractObjectPermission, OperationPermission, PermissionRoles
+
+from services.permissions.base import (
+    AbstractObjectPermission,
+    OperationPermission,
+    PermissionRoles,
+)
 
 
 class CommentPermissions(AbstractObjectPermission):
@@ -15,11 +20,11 @@ class CommentPermissions(AbstractObjectPermission):
                 model_object.author_id,
                 model_object.post.author_id
             ]),
-            (OperationPermission.Comment.can_view, [PermissionRoles.all.value]),
         ]
 
     @staticmethod
     def get_operation_lvl_permission() -> list[Tuple[str, list[str]]]:
         return [
             (OperationPermission.Comment.can_create, [PermissionRoles.all.value]),
+            (OperationPermission.Comment.can_view, [PermissionRoles.all.value]),
         ]

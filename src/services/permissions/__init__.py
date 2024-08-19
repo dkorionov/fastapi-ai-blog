@@ -3,7 +3,11 @@ from typing import Type
 from db.models import CommentModel, PostModel, UserModel
 
 from services.errors import PermissionDeniedError
-from services.permissions.base import AbstractModel, AbstractObjectPermission
+from services.permissions.base import (
+    AbstractModel,
+    AbstractObjectPermission,
+    PermissionRoles,
+)
 from services.permissions.comments import CommentPermissions
 from services.permissions.posts import PostPermissions
 from services.permissions.users import UserPermission
@@ -30,7 +34,7 @@ def check_object_permission(
     for permission in object_permission:
         if operation == permission[0]:
             allowed_roles = permission[1]
-            if "all" in allowed_roles or user.role in allowed_roles or user.id in allowed_roles:
+            if PermissionRoles.all.value in allowed_roles or user.role in allowed_roles or user.id in allowed_roles:
                 return
     raise PermissionDeniedError
 
@@ -45,6 +49,6 @@ def check_operation_permission(
     for permission in operation_permission:
         if operation == permission[0]:
             allowed_roles = permission[1]
-            if "all" in allowed_roles or user.role.value in allowed_roles:
+            if PermissionRoles.all.value in allowed_roles or user.role.value in allowed_roles:
                 return
     raise PermissionDeniedError

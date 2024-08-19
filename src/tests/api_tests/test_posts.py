@@ -1,11 +1,9 @@
 import random
 
 import pytest
-from api_tests.conftest import login_client, logout_client
 from db import Database
 from db.models import PostModel, UserModel
-from factories.posts import PostFactory
-from factories.users import UserFactory
+from factories import PostFactory, UserFactory
 from fastapi import FastAPI
 from httpx import AsyncClient
 from services.oauth import JwtAuthService
@@ -19,8 +17,10 @@ from web.api.posts import (
     update_post_url_name,
 )
 
+from api_tests.conftest import login_client, logout_client
 
-@pytest.fixture(scope="function", autouse=True)
+
+@pytest.fixture(scope="function")
 async def create_test_data(database_connect: Database, async_client: AsyncClient, get_jwt_service: JwtAuthService):
     async with database_connect.get_async_session() as session:
         user_1 = UserFactory()

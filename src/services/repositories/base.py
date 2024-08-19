@@ -68,9 +68,7 @@ class PgRepositoryMixin(AbstractRepository):
             await session.commit()
         except IntegrityError as e:
             raise DuplicateResourceError(detail=str(e.orig))
-        # stmt = insert(self.model).values(items).returning(self.model.id)
-        # result = await session.execute(stmt)
-        # return result.scalars().all()
+
 
     async def update_bulk(self, session: AsyncSession, updates: List[dict]) -> Sequence[Any]:
         results = await session.execute(update(self.model).values(updates).returning(self.model.id))

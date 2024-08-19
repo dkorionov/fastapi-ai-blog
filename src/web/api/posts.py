@@ -30,7 +30,7 @@ async def get_post_list(
         pagination=Depends(get_pagination),
         filters=Depends(get_post_filters),
         ordering=Depends(get_ordering),
-        repository=Depends(PostRepository),
+        repository: PostRepository = Depends(PostRepository),
 ) -> list[PostWithAuthorSchema]:
     check_operation_permission(OperationPermission.Post.can_view_list, request.state.user)
     async with db.get_async_session() as session:
@@ -43,7 +43,7 @@ async def create_post(
         request: Request,
         data: InputPostSchema,
         db: Database = Depends(inject_database),
-        repository=Depends(PostRepository),
+        repository: PostRepository = Depends(PostRepository),
 ) -> PostWithAuthorSchema:
     check_operation_permission(OperationPermission.Post.can_create, request.state.user)
     post = PostModel(
@@ -52,7 +52,7 @@ async def create_post(
     )
     async with db.get_async_session() as session:
         await repository.create(session, post)
-        post = await repository.get_with_author(session, post.id)
+        post = await repository.get(session, post.id)
     return PostWithAuthorSchema.model_validate(post, from_attributes=True)
 
 
@@ -61,11 +61,11 @@ async def get_post(
         request: Request,
         post_id: int,
         db: Database = Depends(inject_database),
-        repository=Depends(PostRepository)
+        repository: PostRepository = Depends(PostRepository)
 
 ) -> PostWithAuthorSchema:
     async with db.get_async_session() as session:
-        post = await repository.get_with_author(session, post_id)
+        post = await repository.get(session, post_id)
     check_object_permission(OperationPermission.Post.can_view, request.state.user, post)
     return PostWithAuthorSchema.model_validate(post, from_attributes=True)
 
@@ -76,7 +76,7 @@ async def update_post(
         post_id: int,
         data: UpdatePostSchema,
         db: Database = Depends(inject_database),
-        repository=Depends(PostRepository)
+        repository: PostRepository = Depends(PostRepository)
 ) -> PostWithAuthorSchema:
     async with db.get_async_session() as session:
         post = await repository.get(session, post_id)
@@ -84,7 +84,6 @@ async def update_post(
         await repository.update(session, post.id, data.model_dump(
             exclude_unset=True, exclude_defaults=True
         ))
-        post = await repository.get_with_author(session, post_id)
     return PostWithAuthorSchema.model_validate(post, from_attributes=True)
 
 
