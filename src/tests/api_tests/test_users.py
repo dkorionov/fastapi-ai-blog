@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from typing import cast
 
 import pytest
@@ -11,9 +12,10 @@ from services.oauth import JwtAuthService
 from services.repositories.users import UserRepository
 from starlette import status
 from tests.api_tests.conftest import login_client
-from web.api.users import me_url_name, user_all_url_name
+from web.api.users import me_url_name, user_all_url_name, user_settings_url_name
 
 
+@pytest.mark.anyio
 class TestUserAPI:
     repository = UserRepository()
 
@@ -23,7 +25,6 @@ class TestUserAPI:
         response = await async_client.get(url)
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    @pytest.mark.anyio
     async def test_me(
             self,
             async_client: AsyncClient,
@@ -32,7 +33,7 @@ class TestUserAPI:
             get_jwt_service: JwtAuthService,
     ):
         async with database_connect.get_async_session() as session:
-            user = await self.repository.create(session, UserFactory(id=None))
+            user = await self.repository.create_with_settings(session, UserFactory(id=None))
             user = cast(UserModel, user)
 
         login_client(async_client, user.id, get_jwt_service)
@@ -44,7 +45,6 @@ class TestUserAPI:
         assert response_data["email"] == user.email
         assert response_data["id"] == user.id
 
-    @pytest.mark.anyio
     async def test_all_permission_denied(
             self,
             async_client: AsyncClient,
@@ -61,7 +61,6 @@ class TestUserAPI:
         response = await async_client.get(url)
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    @pytest.mark.anyio
     async def test_get_all(
             self,
             async_client: AsyncClient,
@@ -79,3 +78,23 @@ class TestUserAPI:
         response_data = response.json()
         assert response.status_code == status.HTTP_200_OK
         assert len(response_data) == 6
+
+    async def test_update_user_settings(
+            self,
+            async_client: AsyncClient,
+            fastapi_app: FastAPI,
+            database_connect: Database,
+            get_jwt_service: JwtAuthService,
+    ):
+        url = fastapi_app.url_path_for(user_settings_url_name)
+        async with database_connect.get_async_session() as session:
+            user = await self.repository.create_with_settings(session, UserFactory(id=None))
+            user = cast(UserModel, user)
+        login_client(async_client, user.id, get_jwt_service)
+        response = await async_client.patch(
+            url,
+            json={"auto_answer_delay": str((datetime.min + timedelta(minutes=5)).time())}
+        )
+        data = response.json()
+        assert response.status_code == status.HTTP_200_OK
+        assert data["settings"]["auto_answer_delay"] == "00:05:00"

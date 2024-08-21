@@ -70,7 +70,7 @@ async def get_post(
     return PostWithAuthorSchema.model_validate(post, from_attributes=True)
 
 
-@router.put("/{post_id}", name=update_post_url_name)
+@router.patch("/{post_id}", name=update_post_url_name)
 async def update_post(
         request: Request,
         post_id: int,

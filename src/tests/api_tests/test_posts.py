@@ -27,12 +27,11 @@ async def create_test_data(database_connect: Database, async_client: AsyncClient
         user_2 = UserFactory()
         session.add(user_1)
         session.add(user_2)
-        await session.commit()
+        await session.flush()
         posts = [PostFactory(author_id=random.choice([user_1.id, user_2.id])) for _ in range(5)]
         posts.extend([PostFactory(author_id=user_1.id), PostFactory(author_id=user_2.id)])
         session.add_all(posts)
         await session.commit()
-        await session.refresh(user_1)
         login_client(async_client, user_1.id, get_jwt_service)
 
 
@@ -146,7 +145,7 @@ class TestPostsAPI:
             result = await session.execute(post)
             post = result.scalars().first()
         url = fastapi_app.url_path_for(update_post_url_name, post_id=post.id)
-        response = await async_client.put(url, json={"title": "New Title"})
+        response = await async_client.patch(url, json={"title": "New Title"})
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
     async def test_update_post(
@@ -161,7 +160,7 @@ class TestPostsAPI:
             result = await session.execute(post)
             post = result.scalars().first()
         url = fastapi_app.url_path_for(update_post_url_name, post_id=post.id)
-        response = await async_client.put(url, json={"title": "New Title"})
+        response = await async_client.patch(url, json={"title": "New Title"})
         assert response.status_code == status.HTTP_200_OK
         response_data = response.json()
         assert response_data["title"] == "New Title"

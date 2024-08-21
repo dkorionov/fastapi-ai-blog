@@ -12,6 +12,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from services.errors import ResourceNotFoundError
 from services.errors.base import DuplicateResourceError
@@ -24,10 +25,27 @@ class AbstractRepository(abc.ABC):
 class PgRepositoryMixin(AbstractRepository):
     model: Type[AbstractModel]
 
-    async def get(self, session: AsyncSession, obj_id: str | int) -> AbstractModel | Any:
-        obj = await session.get(self.model, obj_id)
+    async def get(
+            self,
+            session: AsyncSession,
+            obj_id: str | int,
+            joined: list[Any] | None = None,
+            selection: list[Any] | None = None
+    ) -> AbstractModel | Any:
+        if joined or selection:
+            stmt = select(self.model)
+            if joined:
+                stmt = stmt.options(joinedload(*joined))
+            if selection:
+                stmt = stmt.options(*selection)
+            stmt = stmt.where(self.model.id == obj_id)
+            result = await session.execute(stmt)
+            obj = result.scalar_one_or_none()
+        else:
+            obj = await session.get(self.model, obj_id)
+
         if not obj:
-            raise ResourceNotFoundError(detail=f"{self.model.__name__} not found with id {obj_id}")
+            raise ResourceNotFoundError(detail=f"{self.model.__name__} with id {obj_id} not found")
         return obj
 
     async def list(
@@ -37,6 +55,7 @@ class PgRepositoryMixin(AbstractRepository):
             ordering: list[str] | None = None,
             limit: int = 10,
             offset: int = 0
+
     ) -> Sequence[Row[Any] | RowMapping | Any] | list[Any]:
         stmt = select(self.model)
         stmt = self.filter_query(self.model, stmt, filters, ordering, limit, offset)
@@ -68,7 +87,6 @@ class PgRepositoryMixin(AbstractRepository):
             await session.commit()
         except IntegrityError as e:
             raise DuplicateResourceError(detail=str(e.orig))
-
 
     async def update_bulk(self, session: AsyncSession, updates: List[dict]) -> Sequence[Any]:
         results = await session.execute(update(self.model).values(updates).returning(self.model.id))

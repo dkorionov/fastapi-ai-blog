@@ -45,7 +45,7 @@ async def create_comment(
     return OutputCommentSchema.model_validate(comment, from_attributes=True)
 
 
-@router.put("/{comment_id}", name=comment_update_url_name, response_model=OutputCommentSchema)
+@router.patch("/{comment_id}", name=comment_update_url_name, response_model=OutputCommentSchema)
 async def update_comment(
         request: Request,
         comment_id: int,

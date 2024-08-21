@@ -1,4 +1,4 @@
-from db.models import UserModel
+from db.models import UserModel, UserSettingsModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -16,3 +16,22 @@ class UserRepository(PgRepositoryMixin):
         if not user:
             raise ResourceNotFoundError(detail=f"User not found with username {username}")
         return user
+
+    @staticmethod
+    async def create_with_settings(
+            session: AsyncSession,
+            user: UserModel,
+    ) -> UserModel:
+        session.add(user)
+        await session.flush()
+        settings = UserSettingsModel(user_id=user.id)
+        session.add(settings)
+        await session.commit()
+        return user
+
+
+class UserSettingsRepository(PgRepositoryMixin):
+    model = UserSettingsModel
+
+
+

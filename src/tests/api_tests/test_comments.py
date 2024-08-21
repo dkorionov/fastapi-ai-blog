@@ -20,17 +20,16 @@ async def create_test_data(database_connect: Database, async_client: AsyncClient
         user_2 = UserFactory()
         session.add(user_1)
         session.add(user_2)
-        await session.commit()
+        await session.flush()
         post = PostFactory(author_id=user_1.id)
         session.add(post)
-        await session.commit()
+        await session.flush()
         comments = [
             CommentFactory(author_id=user_1.id, post_id=post.id),
             CommentFactory(author_id=user_2.id, post_id=post.id)
         ]
         session.add_all(comments)
         await session.commit()
-        await session.refresh(user_1)
         login_client(async_client, user_1.id, get_jwt_service)
 
 
@@ -68,7 +67,7 @@ class TestCommentAPI:
             get_jwt_service: JwtAuthService,
     ):
         login_client(async_client, 2, get_jwt_service)
-        response = await async_client.put(
+        response = await async_client.patch(
             fastapi_app.url_path_for(comment_update_url_name, comment_id=1),
             json={"content": "Updated Content"}
         )
@@ -81,7 +80,7 @@ class TestCommentAPI:
             get_jwt_service: JwtAuthService,
     ):
         login_client(async_client, 2, get_jwt_service)
-        response = await async_client.put(
+        response = await async_client.patch(
             fastapi_app.url_path_for(comment_update_url_name, comment_id=2),
             json={"content": "Updated Content"}
         )

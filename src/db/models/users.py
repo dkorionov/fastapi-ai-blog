@@ -37,7 +37,7 @@ class UserModel(AbstractModel):
     )
     user_posts: Mapped[set[PostModel]] = relationship(back_populates="author")
     user_comments: Mapped[set[CommentModel]] = relationship(back_populates="author")
-    settings: Mapped[UserSettingsModel] = relationship(back_populates="user")
+    settings: Mapped[UserSettingsModel] = relationship(back_populates="user", lazy="selectin")
 
 
 class UserSettingsModel(AbstractModel):
@@ -57,5 +57,5 @@ class UserSettingsModel(AbstractModel):
     auto_answer_delay: Mapped[datetime.time] = mapped_column(
         sqlalchemy.Time,
         nullable=False,
-        default=timedelta(minutes=5),
+        default=(datetime.min + timedelta(minutes=5)).time
     )

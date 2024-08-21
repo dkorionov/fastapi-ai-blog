@@ -60,7 +60,7 @@ async def register(
     user = UserModel(**data.model_dump())
     user.password = jwt_service.hash_password(data.password)
     async with db.get_async_session() as session:
-        await repository.create(session, user)
+        await repository.create_with_settings(session, user)
     tokens = jwt_service.generate_jwt_tokens(user.id)
     return ResponseTokenScheme(
         **OutputUserSchema.model_validate(user, from_attributes=True).model_dump(),
